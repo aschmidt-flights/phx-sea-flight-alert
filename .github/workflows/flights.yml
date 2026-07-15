@@ -1,0 +1,52 @@
+name: Flight Price Checker
+
+on:
+
+  schedule:
+
+    - cron: "0 14 * * *"
+
+  workflow_dispatch:
+
+
+jobs:
+
+  check:
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+
+      with:
+
+        python-version: "3.12"
+
+
+    - name: Install packages
+
+      run: |
+
+        pip install -r requirements.txt
+
+
+    - name: Run checker
+
+      run: python check_flights.py
+
+      env:
+
+        SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+
+        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
