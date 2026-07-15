@@ -2,25 +2,47 @@ import os
 import requests
 import smtplib
 from email.message import EmailMessage
+from datetime import datetime, timedelta
 
 
-API_KEY = os.environ["SERPAPI_KEY"]
+SERPAPI_KEY = os.environ["SERPAPI_KEY"]
+
+EMAIL_FROM = os.environ["EMAIL_FROM"]
+EMAIL_TO = os.environ["EMAIL_TO"]
+EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
+
 
 TARGET_PRICE = 180
 
-ORIGIN = "PHX"
-DESTINATION = "SEA"
+
+today = datetime.now()
+
+start_date = today + timedelta(days=14)
+
+end_date = today + timedelta(days=180)
 
 
 params = {
+
     "engine": "google_flights",
-    "departure_id": ORIGIN,
-    "arrival_id": DESTINATION,
-    "outbound_date": "2026-09-15",
-    "return_date": "2026-09-20",
+
+    "departure_id": "PHX",
+
+    "arrival_id": "SEA",
+
+    "type": "1",
+
     "currency": "USD",
+
     "hl": "en",
-    "api_key": API_KEY
+
+    "api_key": SERPAPI_KEY,
+
+    "outbound_date":
+        start_date.strftime("%Y-%m-%d"),
+
+    "return_date":
+        end_date.strftime("%Y-%m-%d")
 }
 
 
@@ -29,23 +51,28 @@ response = requests.get(
     params=params
 )
 
+
 data = response.json()
 
 
 try:
-    flights = data["best_flights"]
 
-    price = flights[0]["price"]
+    price = data["price_insights"]["lowest_price"]
 
 except:
-    print("Could not find flights")
+
+    print("Could not find price data")
+
     exit()
 
 
-print(f"Lowest price found: ${price}")
+print(
+    f"Lowest price found: ${price}"
+)
 
 
 if price <= TARGET_PRICE:
+
 
     msg = EmailMessage()
 
@@ -53,22 +80,27 @@ if price <= TARGET_PRICE:
         "🔥 PHX → SEA Flight Deal Found!"
     )
 
-    msg["From"] = os.environ["EMAIL_FROM"]
+    msg["From"] = EMAIL_FROM
 
-    msg["To"] = os.environ["EMAIL_TO"]
+    msg["To"] = EMAIL_TO
+
 
     msg.set_content(
-        f"""
-        Phoenix to Seattle deal found!
 
-        Price:
-        ${price}
+f"""
 
-        Target:
-        ${TARGET_PRICE}
+Phoenix → Seattle deal found!
 
-        Check Google Flights now.
-        """
+Lowest price:
+${price}
+
+Your target:
+${TARGET_PRICE}
+
+Check Google Flights and book if the dates work.
+
+"""
+
     )
 
 
@@ -78,8 +110,8 @@ if price <= TARGET_PRICE:
     ) as smtp:
 
         smtp.login(
-            os.environ["EMAIL_FROM"],
-            os.environ["EMAIL_PASSWORD"]
+            EMAIL_FROM,
+            EMAIL_PASSWORD
         )
 
         smtp.send_message(msg)
